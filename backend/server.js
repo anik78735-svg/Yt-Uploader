@@ -94,6 +94,9 @@ app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/uploads', require('./src/routes/uploadRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/payments', require('./src/routes/paymentRoutes'));
+app.use('/api/payment-settings', require('./src/routes/paymentSettingsRoutes'));
+app.use('/api/payment-requests', require('./src/routes/paymentRequestRoutes'));
+app.use('/api/wallet', require('./src/routes/walletRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
 
 app.use((req, res, next) => {

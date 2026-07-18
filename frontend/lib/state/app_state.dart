@@ -129,4 +129,15 @@ class AppState extends ChangeNotifier {
     await http.post(uri, headers: await _authHeaders(), body: jsonEncode({'userId': userId}));
     await loadAdminData();
   }
+
+  Future<void> logout() async {
+    _authToken = null;
+    _isAuthenticated = false;
+    _user = null;
+    _diamondBalance = 0;
+    _isAdmin = false;
+    await _secureStorage.delete(key: 'authToken');
+    await _prefs.remove('user');
+    notifyListeners();
+  }
 }
