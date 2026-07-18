@@ -53,7 +53,8 @@ class ProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
                 child: const Center(
-                  child: Icon(Icons.person_rounded, size: 40, color: Colors.white),
+                  child:
+                      Icon(Icons.person_rounded, size: 40, color: Colors.white),
                 ),
               ),
               const SizedBox(width: AppSpacing.lg),
@@ -72,14 +73,16 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.2),
+                        color: AppColors.success.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: const Text(
                         'Verified',
-                        style: TextStyle(fontSize: 11, color: AppColors.success),
+                        style:
+                            TextStyle(fontSize: 11, color: AppColors.success),
                       ),
                     ),
                   ],
@@ -103,7 +106,8 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSpacing: AppSpacing.lg,
           children: [
             _ProfileStatCard(label: 'Uploads', value: '24'),
-            _ProfileStatCard(label: 'Diamonds', value: state.diamondBalance.toString()),
+            _ProfileStatCard(
+                label: 'Diamonds', value: state.diamondBalance.toString()),
             _ProfileStatCard(label: 'Scheduled', value: '3'),
           ],
         );
@@ -253,14 +257,16 @@ class _ProfileMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       onTap: onTap,
       child: Row(
         children: [
           Icon(icon, color: AppColors.primary, size: 24),
           const SizedBox(width: AppSpacing.lg),
           Expanded(child: Text(label, style: AppTextStyles.body)),
-          const Icon(Icons.arrow_forward_rounded, color: AppColors.textSecondary, size: 20),
+          const Icon(Icons.arrow_forward_rounded,
+              color: AppColors.textSecondary, size: 20),
         ],
       ),
     );

@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:yt_uploader_frontend/config/api_config.dart';
 import 'package:yt_uploader_frontend/state/app_state.dart';
 import 'package:yt_uploader_frontend/theme/app_theme.dart';
 import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
+import 'package:yt_uploader_frontend/screens/payment_page_screen.dart';
 
 class DiamondStoreScreen extends StatefulWidget {
   const DiamondStoreScreen({super.key});
@@ -12,12 +16,44 @@ class DiamondStoreScreen extends StatefulWidget {
 }
 
 class _DiamondStoreScreenState extends State<DiamondStoreScreen> {
-  final List<DiamondPackage> packages = [
+  List<DiamondPackage> packages = [
     DiamondPackage(id: 'pkg_100', diamonds: 100, price: 99, badge: 'NONE'),
     DiamondPackage(id: 'pkg_500', diamonds: 500, price: 399, badge: 'POPULAR'),
     DiamondPackage(id: 'pkg_1000', diamonds: 1000, price: 699, badge: 'NONE'),
-    DiamondPackage(id: 'pkg_5000', diamonds: 5000, price: 2999, badge: 'DISCOUNT'),
+    DiamondPackage(
+        id: 'pkg_5000', diamonds: 5000, price: 2999, badge: 'DISCOUNT'),
   ];
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackages();
+  }
+
+  Future<void> _loadPackages() async {
+    try {
+      final response = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/api/payment/settings'));
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final payload = jsonDecode(response.body);
+        final settings = payload['settings'];
+        if (settings != null && settings['diamondPackages'] != null) {
+          setState(() {
+            packages = (settings['diamondPackages'] as List).map((entry) {
+              return DiamondPackage(
+                id: entry['packageId'] ?? '',
+                diamonds: entry['diamonds'] ?? 0,
+                price: entry['price'] ?? 0,
+                badge: entry['badge'] ?? 'NONE',
+              );
+            }).toList();
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,17 +79,20 @@ class _DiamondStoreScreenState extends State<DiamondStoreScreen> {
                 const SizedBox(height: AppSpacing.xl),
                 const Text('Choose Package', style: AppTextStyles.heading2),
                 const SizedBox(height: AppSpacing.lg),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: packages.length,
-                  itemBuilder: (context, index) {
-                    return _DiamondPackageCard(
-                      package: packages[index],
-                      onBuy: () => _handleBuyDiamonds(packages[index]),
-                    );
-                  },
-                ),
+                if (_loading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: packages.length,
+                    itemBuilder: (context, index) {
+                      return _DiamondPackageCard(
+                        package: packages[index],
+                        onBuy: () => _handleBuyDiamonds(packages[index]),
+                      );
+                    },
+                  ),
                 const SizedBox(height: AppSpacing.xl),
                 _buildAutoRefillCard(),
               ],
@@ -94,12 +133,44 @@ class _DiamondStoreScreenState extends State<DiamondStoreScreen> {
     );
   }
 
-  void _initiatePayment(DiamondPackage package) {
-    // Show payment page with QR code and UPI ID
-    showDialog(
-      context: context,
-      builder: (context) => const PaymentDialog(),
-    );
+  Future<void> _initiatePayment(DiamondPackage package) async {
+    setState(() => _loading = true);
+    try {
+      final state = context.read<AppState>();
+      final headers = await state.getAuthHeadersForRequest();
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/payment-requests/request'),
+        headers: headers,
+        body: jsonEncode({'packageId': package.id}),
+      );
+      if (!mounted) return;
+      final payload = jsonDecode(response.body);
+      if (response.statusCode == 200 && payload['success'] == true) {
+        final paymentRequest = payload['paymentRequest'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentPageScreen(
+              paymentId: paymentRequest['paymentId'],
+              token: paymentRequest['secureToken'],
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(payload['error'] ?? 'Payment could not be created')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Network error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Widget _buildAutoRefillCard() {
@@ -115,7 +186,8 @@ class _DiamondStoreScreenState extends State<DiamondStoreScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'When balance reaches 0',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -123,7 +195,7 @@ class _DiamondStoreScreenState extends State<DiamondStoreScreen> {
           Switch(
             value: false,
             onChanged: (_) {},
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
         ],
       ),
@@ -172,7 +244,8 @@ class _DiamondPackageCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.diamond_rounded, color: AppColors.diamond, size: 32),
+                  const Icon(Icons.diamond_rounded,
+                      color: AppColors.diamond, size: 32),
                   const SizedBox(width: AppSpacing.md),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,15 +271,17 @@ class _DiamondPackageCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: package.badge == 'POPULAR'
-                        ? AppColors.warning.withOpacity(0.2)
-                        : AppColors.success.withOpacity(0.2),
+                        ? AppColors.warning.withValues(alpha: 0.2)
+                        : AppColors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     package.badge,
                     style: TextStyle(
                       fontSize: 11,
-                      color: package.badge == 'POPULAR' ? AppColors.warning : AppColors.success,
+                      color: package.badge == 'POPULAR'
+                          ? AppColors.warning
+                          : AppColors.success,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -263,14 +338,16 @@ class PaymentDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Center(
-                  child: Text('[QR Code Here]', style: TextStyle(color: Colors.black)),
+                  child: Text('[QR Code Here]',
+                      style: TextStyle(color: Colors.black)),
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Center(
                 child: Column(
                   children: [
-                    const Text('Or scan with UPI App', style: AppTextStyles.body),
+                    const Text('Or scan with UPI App',
+                        style: AppTextStyles.body),
                     const SizedBox(height: AppSpacing.lg),
                     GlassCard(
                       padding: const EdgeInsets.symmetric(
@@ -294,12 +371,14 @@ class PaymentDialog extends StatelessWidget {
                                 vertical: AppSpacing.sm,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
                               ),
                               child: const Text(
                                 'Copy',
-                                style: TextStyle(fontSize: 12, color: AppColors.primary),
+                                style: TextStyle(
+                                    fontSize: 12, color: AppColors.primary),
                               ),
                             ),
                           ],

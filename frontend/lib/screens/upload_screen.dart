@@ -47,11 +47,14 @@ class _UploadScreenState extends State<UploadScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.cloud_upload_rounded, size: 48, color: AppColors.primary),
+          const Icon(Icons.cloud_upload_rounded,
+              size: 48, color: AppColors.primary),
           const SizedBox(height: AppSpacing.lg),
           const Text('Select or drag video file', style: AppTextStyles.body),
           const SizedBox(height: AppSpacing.md),
-          Text('MP4, WebM, AVI up to 100MB', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
+          Text('MP4, WebM, AVI up to 100MB',
+              style:
+                  AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
         ],
       ),
     );

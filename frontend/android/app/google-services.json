@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "786154227390",
+    "project_id": "yt-uploader-358a7",
+    "storage_bucket": "yt-uploader-358a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:786154227390:android:6b11d3063b0471ecca80ef",
+        "android_client_info": {
+          "package_name": "com.tubepilot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAebSZNvQl4Yzt5qVTIj65wYE3lQdgStxQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

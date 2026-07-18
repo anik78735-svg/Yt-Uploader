@@ -5,6 +5,7 @@ import 'package:yt_uploader_frontend/state/app_state.dart';
 import 'package:yt_uploader_frontend/screens/auth_screen.dart';
 import 'package:yt_uploader_frontend/screens/dashboard_shell.dart';
 import 'package:yt_uploader_frontend/screens/splash_screen.dart';
+import 'package:yt_uploader_frontend/screens/username_setup_screen.dart';
 import 'package:yt_uploader_frontend/theme/app_theme.dart';
 
 void main() async {
@@ -43,9 +44,13 @@ class AppShell extends StatelessWidget {
         }
 
         final state = context.watch<AppState>();
-        return state.isAuthenticated ? const DashboardShell() : const AuthScreen();
+        if (!state.isAuthenticated) {
+          return const AuthScreen();
+        }
+
+        final hasCustomUsername = state.user?['hasCustomUsername'] == true;
+        return hasCustomUsername ? const DashboardShell() : const UsernameSetupScreen();
       },
     );
   }
 }
-

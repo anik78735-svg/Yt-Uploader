@@ -1,4 +1,4 @@
-package com.example.yt_uploader_frontend
+package com.tubepilot.app
 
 import io.flutter.embedding.android.FlutterActivity
 

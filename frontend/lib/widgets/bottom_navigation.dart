@@ -99,7 +99,9 @@ class _NavigationButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(

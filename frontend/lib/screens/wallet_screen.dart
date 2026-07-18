@@ -1,4 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:yt_uploader_frontend/config/api_config.dart';
+import 'package:yt_uploader_frontend/state/app_state.dart';
 import 'package:yt_uploader_frontend/theme/app_theme.dart';
 import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
 
@@ -9,19 +14,43 @@ class WalletScreen extends StatefulWidget {
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderStateMixin {
+class _WalletScreenState extends State<WalletScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Map<String, dynamic>? _walletData;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadWallet();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadWallet() async {
+    final state = context.read<AppState>();
+    final headers = await state.getAuthHeadersForRequest();
+    try {
+      final response = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/api/wallet'), headers: headers);
+      if (!mounted) return;
+      final payload = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        setState(() {
+          _walletData = payload['wallet'];
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -74,22 +103,26 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
                 children: [
                   const Text('Current Balance', style: AppTextStyles.bodySmall),
                   const SizedBox(height: AppSpacing.sm),
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.diamond_rounded, color: AppColors.diamond, size: 20),
-                      SizedBox(width: AppSpacing.sm),
-                      Text('1000', style: AppTextStyles.heading2),
+                      const Icon(Icons.diamond_rounded,
+                          color: AppColors.diamond, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(_walletData?['currentDiamonds']?.toString() ?? '0',
+                          style: AppTextStyles.heading2),
                     ],
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                child: const Text('+ Buy More', style: TextStyle(color: AppColors.primary)),
+                child: const Text('+ Buy More',
+                    style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -97,11 +130,18 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
           Row(
             children: [
               Expanded(
-                child: _WalletStatCard(label: 'Purchased', value: '5000'),
+                child: _WalletStatCard(
+                    label: 'Purchased',
+                    value:
+                        _walletData?['lifetimeDiamondsPurchased']?.toString() ??
+                            '0'),
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
-                child: _WalletStatCard(label: 'Used', value: '4000'),
+                child: _WalletStatCard(
+                    label: 'Used',
+                    value: _walletData?['lifetimeDiamondsUsed']?.toString() ??
+                        '0'),
               ),
             ],
           ),
@@ -128,6 +168,10 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
   }
 
   Widget _buildTransactionHistory() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: ListView.builder(
@@ -137,9 +181,8 @@ class _WalletScreenState extends State<WalletScreen> with SingleTickerProviderSt
             type: index % 2 == 0 ? 'Purchase' : 'Usage',
             amount: index % 2 == 0 ? '+500' : '-100',
             date: 'May ${20 - index}, 2025',
-            description: index % 2 == 0
-                ? 'Diamond Package Purchase'
-                : 'Video Upload',
+            description:
+                index % 2 == 0 ? 'Diamond Package Purchase' : 'Video Upload',
           );
         },
       ),
@@ -201,7 +244,8 @@ class _WalletStatCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              const Icon(Icons.diamond_rounded, color: AppColors.diamond, size: 16),
+              const Icon(Icons.diamond_rounded,
+                  color: AppColors.diamond, size: 16),
               const SizedBox(width: AppSpacing.sm),
               Text(value, style: AppTextStyles.heading3),
             ],
@@ -239,7 +283,7 @@ class _TransactionItem extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Center(

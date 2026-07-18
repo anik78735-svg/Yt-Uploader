@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:yt_uploader_frontend/state/app_state.dart';
 import 'package:yt_uploader_frontend/theme/app_theme.dart';
 import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
+import 'package:yt_uploader_frontend/screens/diamond_store_screen.dart';
+import 'package:yt_uploader_frontend/screens/wallet_screen.dart';
+import 'package:yt_uploader_frontend/screens/upload_screen.dart';
+import 'package:yt_uploader_frontend/screens/schedule_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildUpcomingVideos(),
               const SizedBox(height: AppSpacing.xl),
               _buildQuickActions(),
+              const SizedBox(height: AppSpacing.xl),
+              _buildRecentActivity(),
             ],
           ),
         ),
@@ -57,7 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, state, _) {
             return Text(
               state.user?['youtubeChannelName'] ?? 'Channel',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppTextStyles.body.copyWith(color: AppColors.textSecondary),
             );
           },
         ),
@@ -71,7 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return DiamondBalance(
           diamonds: state.diamondBalance,
           onBuyMore: () {
-            // Navigate to diamond store
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DiamondStoreScreen()));
           },
         );
       },
@@ -150,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Text(
@@ -183,14 +191,22 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: GradientButton(
                 text: 'Upload Video',
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const UploadScreen()));
+                },
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: GradientButton(
                 text: 'Schedule',
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ScheduleScreen()));
+                },
               ),
             ),
           ],
@@ -201,7 +217,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: GradientButton(
                 text: 'Buy Diamonds',
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DiamondStoreScreen()));
+                },
                 gradientStart: AppColors.diamond,
                 gradientEnd: AppColors.primary,
               ),
@@ -217,16 +238,79 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const WalletScreen()));
+                    },
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: const Center(
-                      child: Text('Analytics', style: AppTextStyles.button),
+                      child: Text('Wallet', style: AppTextStyles.button),
                     ),
                   ),
                 ),
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivity() {
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Recent Activity', style: AppTextStyles.heading3),
+          const SizedBox(height: AppSpacing.lg),
+          _ActivityItem(
+              title: 'Diamond purchase approved',
+              subtitle: 'Your latest refill has been credited',
+              icon: Icons.workspace_premium_rounded),
+          const SizedBox(height: AppSpacing.md),
+          _ActivityItem(
+              title: 'Upload scheduled successfully',
+              subtitle: 'Your video is queued for tomorrow',
+              icon: Icons.schedule_rounded),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _ActivityItem(
+      {required this.title, required this.subtitle, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        const SizedBox(width: AppSpacing.lg),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTextStyles.bodyLarge),
+              const SizedBox(height: AppSpacing.sm),
+              Text(subtitle, style: AppTextStyles.bodySmall),
+            ],
+          ),
         ),
       ],
     );
@@ -254,7 +338,8 @@ class _StatCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Icon(icon, color: color, size: 32),
-          Text(label, style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
+          Text(label,
+              style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
           Text(value, style: AppTextStyles.heading2),
         ],
       ),

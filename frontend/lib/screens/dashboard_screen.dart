@@ -48,7 +48,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final state = context.watch<AppState>();
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF09090F), Color(0xFF141A2E)])),
+        decoration: const BoxDecoration(
+            gradient:
+                LinearGradient(colors: [Color(0xFF09090F), Color(0xFF141A2E)])),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -61,15 +63,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.18)),
+                          border:
+                              Border.all(color: Colors.white.withValues(alpha: 0.18)),
                         ),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Creator Vault', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 8),
-                          Text('${state.diamondBalance} 💎', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Color(0xFFF59E0B))),
-                        ]),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Creator Vault',
+                                  style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 8),
+                              Text('${state.diamondBalance} 💎',
+                                  style: const TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFFF59E0B))),
+                            ]),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -77,7 +89,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onPressed: _launchUpi,
                       icon: const Icon(Icons.monetization_on_outlined),
                       label: const Text('Buy Diamonds'),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB)),
                     ),
                   ],
                 ),
@@ -85,21 +98,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.18)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Schedule Content (Costs 10 💎)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 12),
-                    TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Video title')),
-                    const SizedBox(height: 12),
-                    TextField(controller: _descController, decoration: const InputDecoration(labelText: 'Description')),
-                    const SizedBox(height: 12),
-                    TextField(controller: _timeController, decoration: const InputDecoration(labelText: 'Scheduled time (ISO)')),
-                    const SizedBox(height: 16),
-                    ElevatedButton(onPressed: () {}, child: const Text('Queue Upload')),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Schedule Content (Costs 10 💎)',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 12),
+                        TextField(
+                            controller: _titleController,
+                            decoration: const InputDecoration(
+                                labelText: 'Video title')),
+                        const SizedBox(height: 12),
+                        TextField(
+                            controller: _descController,
+                            decoration: const InputDecoration(
+                                labelText: 'Description')),
+                        const SizedBox(height: 12),
+                        TextField(
+                            controller: _timeController,
+                            decoration: const InputDecoration(
+                                labelText: 'Scheduled time (ISO)')),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('Queue Upload')),
+                      ]),
                 ),
                 const SizedBox(height: 20),
                 if (state.isAdmin) _adminPanel(state),
@@ -113,24 +141,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _adminPanel(AppState state) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Admin Portal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      const Text('Admin Portal',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12),
-      ...state.pendingTransactions.map((tx) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(18)),
-        child: Row(children: [
-          Expanded(child: Text('TX ${tx['_id']} • ${tx['username']}')),
-          TextButton(onPressed: () => state.approveTransaction(tx['_id']), child: const Text('APPROVE 🟢')),
-          TextButton(onPressed: () => state.rejectTransaction(tx['_id']), child: const Text('REJECT 🔴')),
-        ]),
-      )).toList(),
+      ...state.pendingTransactions
+          .map((tx) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(18)),
+                child: Row(children: [
+                  Expanded(child: Text('TX ${tx['_id']} • ${tx['username']}')),
+                  TextButton(
+                      onPressed: () => state.approveTransaction(tx['_id']),
+                      child: const Text('APPROVE 🟢')),
+                  TextButton(
+                      onPressed: () => state.rejectTransaction(tx['_id']),
+                      child: const Text('REJECT 🔴')),
+                ]),
+              )),
       const SizedBox(height: 12),
-      ...state.users.map((user) => ListTile(
-        title: Text(user['username'] ?? user['email']),
-        subtitle: Text(user['email']),
-        trailing: IconButton(icon: const Icon(Icons.logout), onPressed: () => state.forceLogout(user['_id'])),
-      )).toList(),
+      ...state.users
+          .map((user) => ListTile(
+                title: Text(user['username'] ?? user['email']),
+                subtitle: Text(user['email']),
+                trailing: IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () => state.forceLogout(user['_id'])),
+              )),
     ]);
   }
 }

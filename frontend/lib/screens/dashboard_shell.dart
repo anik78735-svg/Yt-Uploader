@@ -8,6 +8,7 @@ import 'package:yt_uploader_frontend/screens/upload_screen.dart';
 import 'package:yt_uploader_frontend/screens/schedule_screen.dart';
 import 'package:yt_uploader_frontend/screens/analytics_screen.dart';
 import 'package:yt_uploader_frontend/screens/profile_screen.dart';
+import 'package:yt_uploader_frontend/screens/admin_payment_screen.dart';
 
 class DashboardShell extends StatefulWidget {
   const DashboardShell({super.key});
@@ -21,12 +22,20 @@ class _DashboardShellState extends State<DashboardShell> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final isAdmin = state.isAdmin;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: _buildCurrentScreen(),
       bottomNavigationBar: CustomBottomNavigation(
         currentItem: _currentItem,
         onItemSelected: (item) {
+          if (item == NavigationItem.profile && isAdmin) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AdminPaymentScreen()));
+            return;
+          }
           setState(() {
             _currentItem = item;
           });

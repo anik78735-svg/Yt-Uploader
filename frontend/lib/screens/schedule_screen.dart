@@ -37,8 +37,10 @@ class ScheduleScreen extends StatelessWidget {
               const Text('May 2025', style: AppTextStyles.bodyLarge),
               Row(
                 children: [
-                  IconButton(icon: const Icon(Icons.chevron_left), onPressed: () {}),
-                  IconButton(icon: const Icon(Icons.chevron_right), onPressed: () {}),
+                  IconButton(
+                      icon: const Icon(Icons.chevron_left), onPressed: () {}),
+                  IconButton(
+                      icon: const Icon(Icons.chevron_right), onPressed: () {}),
                 ],
               ),
             ],
@@ -90,11 +92,13 @@ class ScheduleScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Video Title ${index + 1}', style: AppTextStyles.bodyLarge),
+                  Text('Video Title ${index + 1}',
+                      style: AppTextStyles.bodyLarge),
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.textSecondary),
+                      const Icon(Icons.calendar_today_rounded,
+                          size: 16, color: AppColors.textSecondary),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         'May ${15 + index}, 2025 • 10:00 PM',
@@ -107,16 +111,20 @@ class ScheduleScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
-                        child: const Text('Scheduled', style: TextStyle(fontSize: 11, color: AppColors.primary)),
+                        child: const Text('Scheduled',
+                            style: TextStyle(
+                                fontSize: 11, color: AppColors.primary)),
                       ),
                       GestureDetector(
                         onTap: () {},
-                        child: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+                        child: const Icon(Icons.more_vert_rounded,
+                            color: AppColors.textSecondary),
                       ),
                     ],
                   ),

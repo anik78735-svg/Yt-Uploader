@@ -51,8 +51,10 @@ class AnalyticsScreen extends StatelessWidget {
                   child: Text(
                     period,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color:
+                          isSelected ? Colors.white : AppColors.textSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -144,21 +146,25 @@ class AnalyticsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Video Title ${index + 1}', style: AppTextStyles.bodyLarge),
+                        Text('Video Title ${index + 1}',
+                            style: AppTextStyles.bodyLarge),
                         const SizedBox(height: AppSpacing.sm),
-                        Text('${(index + 1) * 1250} views', style: AppTextStyles.bodySmall),
+                        Text('${(index + 1) * 1250} views',
+                            style: AppTextStyles.bodySmall),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.2),
+                      color: AppColors.success.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Text(
                       '+${(index + 1) * 5}%',
-                      style: const TextStyle(fontSize: 11, color: AppColors.success),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.success),
                     ),
                   ),
                 ],
@@ -193,12 +199,14 @@ class _AnalyticsCard extends StatelessWidget {
           Text(label, style: AppTextStyles.bodySmall),
           Text(value, style: AppTextStyles.heading2),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.2),
+              color: AppColors.success.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Text(change, style: const TextStyle(fontSize: 11, color: AppColors.success)),
+            child: Text(change,
+                style: const TextStyle(fontSize: 11, color: AppColors.success)),
           ),
         ],
       ),

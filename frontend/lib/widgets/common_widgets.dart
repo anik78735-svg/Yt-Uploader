@@ -33,12 +33,12 @@ class GlassCard extends StatelessWidget {
         margin: margin,
         padding: padding,
         decoration: BoxDecoration(
-          color: AppColors.surfaceLight.withOpacity(0.8),
+          color: AppColors.surfaceLight.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(borderRadius),
           border: border ?? Border.all(color: AppColors.glassBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -90,7 +90,7 @@ class GradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -108,7 +108,8 @@ class GradientButton extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textPrimary),
                       ),
                     )
                   : Text(
@@ -145,8 +146,8 @@ class DiamondBalance extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.diamond.withOpacity(0.8),
-            AppColors.primary.withOpacity(0.6),
+            AppColors.diamond.withValues(alpha: 0.8),
+            AppColors.primary.withValues(alpha: 0.6),
           ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -191,7 +192,7 @@ class DiamondBalance extends StatelessWidget {
                   vertical: AppSpacing.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: AppColors.glassBorder),
                 ),
@@ -226,13 +227,14 @@ class LoadingOverlay extends StatelessWidget {
         child,
         if (isLoading)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                   if (message != null) ...[
                     const SizedBox(height: AppSpacing.lg),

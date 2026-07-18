@@ -2,32 +2,32 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary colors
-  static const Color primary = Color(0xFF7C3AED);      // Violet
+  static const Color primary = Color(0xFF7C3AED); // Violet
   static const Color primaryDark = Color(0xFF6D28D9); // Darker Violet
-  static const Color secondary = Color(0xFF06B6D4);    // Cyan
+  static const Color secondary = Color(0xFF06B6D4); // Cyan
 
   // Background colors
-  static const Color background = Color(0xFF060816);   // Dark background
+  static const Color background = Color(0xFF060816); // Dark background
   static const Color surfaceLight = Color(0xFF1B1F36); // Light surface
-  static const Color surfaceDark = Color(0xFF0F1222);  // Dark surface
+  static const Color surfaceDark = Color(0xFF0F1222); // Dark surface
 
   // Glass morphism
-  static const Color glass = Color(0x1AFFFFFF);        // 10% white for glass
-  static const Color glassBorder = Color(0x33FFFFFF);  // 20% white for borders
+  static const Color glass = Color(0x1AFFFFFF); // 10% white for glass
+  static const Color glassBorder = Color(0x33FFFFFF); // 20% white for borders
 
   // Accent colors
-  static const Color success = Color(0xFF10B981);      // Green
-  static const Color warning = Color(0xFFF59E0B);      // Amber
-  static const Color error = Color(0xFFEF4444);        // Red
-  static const Color info = Color(0xFF3B82F6);         // Blue
+  static const Color success = Color(0xFF10B981); // Green
+  static const Color warning = Color(0xFFF59E0B); // Amber
+  static const Color error = Color(0xFFEF4444); // Red
+  static const Color info = Color(0xFF3B82F6); // Blue
 
   // Text colors
-  static const Color textPrimary = Color(0xFFFFFFFF);  // White
+  static const Color textPrimary = Color(0xFFFFFFFF); // White
   static const Color textSecondary = Color(0xFFB0B0B0); // Gray
-  static const Color textMuted = Color(0xFF808080);    // Dark gray
+  static const Color textMuted = Color(0xFF808080); // Dark gray
 
   // Diamond color
-  static const Color diamond = Color(0xFFAE67FA);      // Diamond purple
+  static const Color diamond = Color(0xFFAE67FA); // Diamond purple
 }
 
 class AppSpacing {
@@ -107,7 +107,6 @@ class AppTextStyles {
 class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData.dark().copyWith(
-      useMaterial3: true,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
       secondaryHeaderColor: AppColors.secondary,
@@ -116,7 +115,6 @@ class AppTheme {
         secondary: AppColors.secondary,
         surface: AppColors.surfaceLight,
         error: AppColors.error,
-        background: AppColors.background,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceLight,
