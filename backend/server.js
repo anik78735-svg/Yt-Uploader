@@ -159,15 +159,40 @@ mongoose.connection.on('error', (err) => {
 });
 
 // ---------------------------------------------------------------------------
-// Startup
+// Environment Validation
 // ---------------------------------------------------------------------------
-async function connectDatabase() {
-  if (!process.env.MONGO_URI) {
+function validateEnv() {
+  const required = [
+    'MONGO_URI',
+    // Web Client 1 — Google Login / Authentication
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+    // Web Client 2 — YouTube OAuth (channel authorization, uploads, refresh tokens)
+    'YOUTUBE_CLIENT_ID',
+    'YOUTUBE_CLIENT_SECRET',
+  ];
+
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length > 0) {
     throw new Error(
-      'MONGO_URI environment variable is missing. Please add it in Render Environment Variables.'
+      `Missing required environment variable(s): ${missing.join(', ')}. Please add them in Render Environment Variables.`
     );
   }
 
+  // Google Login and YouTube OAuth must always be separate clients so that
+  // login tokens and YouTube refresh tokens never mix.
+  if (process.env.GOOGLE_CLIENT_ID === process.env.YOUTUBE_CLIENT_ID) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID and YOUTUBE_CLIENT_ID must be different OAuth clients. Google Login and YouTube OAuth cannot share the same client.'
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Startup
+// ---------------------------------------------------------------------------
+async function connectDatabase() {
   await mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 10000,
     connectTimeoutMS: 10000,
@@ -182,6 +207,9 @@ async function start() {
   try {
     console.log('🚀 Starting yt-uploader-backend...');
     console.log(`🌍 Environment: ${NODE_ENV}`);
+
+    validateEnv();
+    console.log('✅ Environment variables validated (Mongo, Google Login, YouTube OAuth)');
 
     await connectDatabase();
 
