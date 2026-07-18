@@ -16,7 +16,7 @@ function sanitizeUser(user) {
 
 async function handleGoogleLogin(req, res, next) {
   try {
-    const { idToken, username, email, googleId } = req.body;
+    const { idToken, username } = req.body;
     if (!idToken) {
       return res.status(400).json({ success: false, error: 'idToken is required' });
     }
@@ -34,30 +34,44 @@ async function handleGoogleLogin(req, res, next) {
     const verifiedGoogleId = payload.sub;
     const verifiedEmail = (payload.email || '').toLowerCase();
     const verifiedName = payload.name || payload.given_name || verifiedEmail;
+    const customUsernameProvided = typeof username === 'string' && username.trim().length > 0;
 
     let user = await User.findOne({ googleId: verifiedGoogleId });
     if (!user) {
       user = await User.findOne({ email: verifiedEmail });
     }
 
+    const isNewUser = !user;
+
     if (!user) {
       user = await User.create({
         googleId: verifiedGoogleId,
         email: verifiedEmail,
-        username: username || `user_${Date.now()}`,
+        username: customUsernameProvided ? username.trim() : `user_${Date.now()}`,
+        hasCustomUsername: customUsernameProvided,
         role: verifiedEmail === 'youradminemail@gmail.com' ? 'ADMIN' : 'USER',
       });
     } else {
       user.googleId = verifiedGoogleId;
       user.email = verifiedEmail;
-      user.username = username || user.username || verifiedName;
+      if (customUsernameProvided) {
+        user.username = username.trim();
+        user.hasCustomUsername = true;
+      } else if (!user.username) {
+        user.username = verifiedName;
+      }
       user.isSessionActive = true;
       await user.save();
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ success: true, token, user: sanitizeUser(user) });
+    res.json({
+      success: true,
+      token,
+      user: sanitizeUser(user),
+      isNewUser,
+    });
   } catch (error) {
     next(error);
   }
@@ -65,6 +79,50 @@ async function handleGoogleLogin(req, res, next) {
 
 router.post('/google-login', handleGoogleLogin);
 router.post('/register', handleGoogleLogin);
+
+router.get('/check-username', async (req, res, next) => {
+  try {
+    const { username } = req.query;
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Username is required' });
+    }
+
+    const cleanUsername = username.trim();
+    const existingUser = await User.findOne({ username: cleanUsername });
+    res.json({ success: true, available: existingUser === null });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/set-username', requireAuth, async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Username is required' });
+    }
+
+    const cleanUsername = username.trim();
+    const existingUser = await User.findOne({ username: cleanUsername, _id: { $ne: req.user.userId } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, error: 'Username already taken' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    user.username = cleanUsername;
+    user.hasCustomUsername = true;
+    user.isSessionActive = true;
+    await user.save();
+
+    res.json({ success: true, user: sanitizeUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post('/youtube-connect', requireAuth, async (req, res, next) => {
   try {

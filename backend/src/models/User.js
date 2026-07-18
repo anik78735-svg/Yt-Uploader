@@ -4,6 +4,7 @@ const UserSchema = new mongoose.Schema({
   googleId: { type: String, required: true, unique: true, index: true },
   email: { type: String, required: true, unique: true, index: true },
   username: { type: String, unique: true, sparse: true, index: true },
+  hasCustomUsername: { type: Boolean, default: false },
   youtubeChannelName: { type: String, default: '' },
   encryptedRefreshToken: { type: String, default: '' },
   diamondBalance: { type: Number, default: 0 },

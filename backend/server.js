@@ -28,13 +28,14 @@ app.use(helmet());
 
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
   credentials: true,
 }));
 
 app.use(morgan(IS_PRODUCTION ? 'combined' : 'dev'));
 
 app.use(express.json({ limit: '50mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.urlencoded({
   extended: true,
   limit: '50mb',
@@ -95,6 +96,8 @@ app.use('/api/uploads', require('./src/routes/uploadRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/payments', require('./src/routes/paymentRoutes'));
 app.use('/api/payment-settings', require('./src/routes/paymentSettingsRoutes'));
+app.use('/api/payment', require('./src/routes/paymentSettingsRoutes'));
+app.use('/api/admin/payment-settings', require('./src/routes/paymentSettingsRoutes'));
 app.use('/api/payment-requests', require('./src/routes/paymentRequestRoutes'));
 app.use('/api/wallet', require('./src/routes/walletRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
