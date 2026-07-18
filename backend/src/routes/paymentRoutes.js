@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
-router.post('/create', async (req, res, next) => {
+router.post('/create', requireAuth, async (req, res, next) => {
   try {
-    const { userId, username, amount } = req.body;
-    const user = await User.findById(userId);
+    const { username, amount } = req.body;
+    const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
     const transaction = await Transaction.create({
-      userId,
+      userId: req.user.userId,
       username: username || user.username,
       amount: amount || 99,
       diamondsCredited: 100,
@@ -23,7 +24,7 @@ router.post('/create', async (req, res, next) => {
   }
 });
 
-router.post('/approve', async (req, res, next) => {
+router.post('/approve', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { transactionId } = req.body;
     const tx = await Transaction.findById(transactionId);
@@ -40,7 +41,7 @@ router.post('/approve', async (req, res, next) => {
   }
 });
 
-router.post('/reject', async (req, res, next) => {
+router.post('/reject', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { transactionId } = req.body;
     const tx = await Transaction.findById(transactionId);

@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+
+router.use(requireAuth);
+router.use(requireAdmin);
 
 router.get('/users', async (req, res, next) => {
   try {
@@ -22,8 +26,7 @@ router.get('/users', async (req, res, next) => {
 
 router.post('/users/logout', async (req, res, next) => {
   try {
-    const { userId } = req.body;
-    await User.findByIdAndUpdate(userId, { isSessionActive: false });
+    await User.findByIdAndUpdate(req.user.userId, { isSessionActive: false });
     res.json({ success: true });
   } catch (error) {
     next(error);

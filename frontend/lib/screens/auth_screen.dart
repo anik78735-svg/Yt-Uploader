@@ -10,9 +10,9 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _emailController = TextEditingController(text: 'youradminemail@gmail.com');
+  final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
-  final _googleIdController = TextEditingController(text: 'demo-google-id');
+  final _googleIdController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 12),
                 TextField(controller: _usernameController, decoration: const InputDecoration(labelText: 'Username @tech_creator')),
                 const SizedBox(height: 12),
-                TextField(controller: _googleIdController, decoration: const InputDecoration(labelText: 'Google ID')),
+                TextField(controller: _googleIdController, decoration: const InputDecoration(labelText: 'Google ID Token')),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,

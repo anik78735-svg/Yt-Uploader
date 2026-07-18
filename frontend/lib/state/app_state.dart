@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yt_uploader_frontend/config/api_config.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._prefs);
 
   final SharedPreferences _prefs;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  String? _authToken;
   bool _isAuthenticated = false;
   Map<String, dynamic>? _user;
   int _diamondBalance = 0;
@@ -21,7 +25,20 @@ class AppState extends ChangeNotifier {
   List<dynamic> get pendingTransactions => _pendingTransactions;
   List<dynamic> get users => _users;
 
+  Future<Map<String, String>> _authHeaders() async {
+    final token = _authToken ?? await _secureStorage.read(key: 'authToken');
+    return {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   Future<void> bootstrap() async {
+    final token = await _secureStorage.read(key: 'authToken');
+    if (token != null) {
+      _authToken = token;
+    }
+
     final userJson = _prefs.getString('user');
     if (userJson != null) {
       _user = jsonDecode(userJson);
@@ -33,12 +50,12 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registerUser({required String googleId, required String email, String? username, String? refreshToken}) async {
-    final uri = Uri.parse('http://10.0.2.2:5000/api/auth/register');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/google-login');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authHeaders(),
       body: jsonEncode({
-        'googleId': googleId,
+        'idToken': googleId,
         'email': email,
         'username': username,
         'refreshToken': refreshToken,
@@ -48,19 +65,21 @@ class AppState extends ChangeNotifier {
     if (response.statusCode == 200) {
       final payload = jsonDecode(response.body);
       _user = payload['user'];
+      _authToken = payload['token'];
       _isAuthenticated = true;
       _diamondBalance = (_user!['diamondBalance'] ?? 0) as int;
       _isAdmin = (_user!['role'] ?? 'USER') == 'ADMIN';
+      await _secureStorage.write(key: 'authToken', value: _authToken);
       await _prefs.setString('user', jsonEncode(_user));
       notifyListeners();
     }
   }
 
   Future<void> createPaymentLog({required String username, required int amount}) async {
-    final uri = Uri.parse('http://10.0.2.2:5000/api/payments/create');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/create');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await _authHeaders(),
       body: jsonEncode({
         'userId': _user!['_id'],
         'username': username,
@@ -75,13 +94,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> loadAdminData() async {
     if (!_isAdmin) return;
-    final usersResponse = await http.get(Uri.parse('http://10.0.2.2:5000/api/admin/users'));
+    final usersResponse = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/admin/users'), headers: await _authHeaders());
     if (usersResponse.statusCode == 200) {
       final usersPayload = jsonDecode(usersResponse.body);
       _users = usersPayload['users'];
     }
 
-    final pendingResponse = await http.get(Uri.parse('http://10.0.2.2:5000/api/admin/transactions/pending'));
+    final pendingResponse = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/admin/transactions/pending'), headers: await _authHeaders());
     if (pendingResponse.statusCode == 200) {
       final pendingPayload = jsonDecode(pendingResponse.body);
       _pendingTransactions = pendingPayload['transactions'];
@@ -90,24 +109,24 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> approveTransaction(String transactionId) async {
-    final uri = Uri.parse('http://10.0.2.2:5000/api/payments/approve');
-    final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'transactionId': transactionId}));
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/approve');
+    final response = await http.post(uri, headers: await _authHeaders(), body: jsonEncode({'transactionId': transactionId}));
     if (response.statusCode == 200) {
       await loadAdminData();
     }
   }
 
   Future<void> rejectTransaction(String transactionId) async {
-    final uri = Uri.parse('http://10.0.2.2:5000/api/payments/reject');
-    final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'transactionId': transactionId}));
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/reject');
+    final response = await http.post(uri, headers: await _authHeaders(), body: jsonEncode({'transactionId': transactionId}));
     if (response.statusCode == 200) {
       await loadAdminData();
     }
   }
 
   Future<void> forceLogout(String userId) async {
-    final uri = Uri.parse('http://10.0.2.2:5000/api/admin/users/logout');
-    await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'userId': userId}));
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/admin/users/logout');
+    await http.post(uri, headers: await _authHeaders(), body: jsonEncode({'userId': userId}));
     await loadAdminData();
   }
 }

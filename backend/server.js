@@ -22,7 +22,7 @@ let isShuttingDown = false;
 // Security & Core Middleware
 // ---------------------------------------------------------------------------
 app.disable('x-powered-by');
-app.set('trust proxy', 1); // Required for Render / reverse proxies (rate-limit, secure cookies, req.ip)
+app.set('trust proxy', 1);
 
 app.use(helmet());
 
@@ -40,7 +40,6 @@ app.use(express.urlencoded({
   limit: '50mb',
 }));
 
-// Rate Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -49,9 +48,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
@@ -74,9 +70,6 @@ function formatUptime(seconds) {
   return `${d}d ${h}h ${m}m ${s}s`;
 }
 
-// ---------------------------------------------------------------------------
-// Health Check
-// ---------------------------------------------------------------------------
 app.get('/health', (req, res) => {
   const mem = process.memoryUsage();
 
@@ -97,18 +90,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Routes
-// ---------------------------------------------------------------------------
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/uploads', require('./src/routes/uploadRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/payments', require('./src/routes/paymentRoutes'));
 app.use('/api/schedules', require('./src/routes/scheduleRoutes'));
 
-// ---------------------------------------------------------------------------
-// 404 Handler
-// ---------------------------------------------------------------------------
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -116,9 +103,6 @@ app.use((req, res, next) => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Global Error Handler
-// ---------------------------------------------------------------------------
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
 
@@ -139,9 +123,6 @@ app.use((err, req, res, next) => {
   res.status(status).json(response);
 });
 
-// ---------------------------------------------------------------------------
-// MongoDB Connection Events
-// ---------------------------------------------------------------------------
 mongoose.connection.on('connected', () => {
   console.log('✅ MongoDB connected');
 });
@@ -158,12 +139,11 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// ---------------------------------------------------------------------------
-// Environment Validation
-// ---------------------------------------------------------------------------
 function validateEnv() {
   const required = [
     'MONGO_URI',
+    'JWT_SECRET',
+    'ENCRYPTION_KEY',
     // Web Client 1 — Google Login / Authentication
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
@@ -180,8 +160,6 @@ function validateEnv() {
     );
   }
 
-  // Google Login and YouTube OAuth must always be separate clients so that
-  // login tokens and YouTube refresh tokens never mix.
   if (process.env.GOOGLE_CLIENT_ID === process.env.YOUTUBE_CLIENT_ID) {
     throw new Error(
       'GOOGLE_CLIENT_ID and YOUTUBE_CLIENT_ID must be different OAuth clients. Google Login and YouTube OAuth cannot share the same client.'
@@ -189,9 +167,6 @@ function validateEnv() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Startup
-// ---------------------------------------------------------------------------
 async function connectDatabase() {
   await mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 10000,
@@ -213,7 +188,6 @@ async function start() {
 
     await connectDatabase();
 
-    // Start Scheduler only after MongoDB connects successfully
     require('./src/services/scheduler');
     console.log('⏱️  Scheduler started');
 
@@ -233,9 +207,6 @@ async function start() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Graceful Shutdown
-// ---------------------------------------------------------------------------
 async function shutdown(signal) {
   if (isShuttingDown) return;
   isShuttingDown = true;
