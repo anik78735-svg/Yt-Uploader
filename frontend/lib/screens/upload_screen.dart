@@ -28,7 +28,7 @@ class _UploadScreenState extends State<UploadScreen> {
   }
 
   Future<void> _pickVideo() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.video);
+    final result = await FilePicker.pickFiles(type: FileType.video);
     if (result == null || result.files.single.path == null) return;
     setState(() {
       _videoFile = File(result.files.single.path!);

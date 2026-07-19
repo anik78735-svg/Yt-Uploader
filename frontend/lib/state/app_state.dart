@@ -45,6 +45,66 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> _persistAuthSession(Map<String, dynamic>? user, String? token) async {
+    _user = user;
+    _authToken = token;
+    if (_user == null || _authToken == null) {
+      return;
+    }
+
+    _isAuthenticated = true;
+    _diamondBalance = (_user!['diamondBalance'] ?? 0) as int;
+    _isAdmin = (_user!['role'] ?? 'USER') == 'ADMIN';
+    await _secureStorage.write(key: 'authToken', value: _authToken!);
+    await _prefs.setString('user', jsonEncode(_user));
+    await _prefs.setBool('hasEverLoggedIn', true);
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> emailSignup({required String email, required String password, required String username}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/signup');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password, 'username': username}),
+    );
+
+    if (response.statusCode != 200) {
+      final payload = jsonDecode(response.body);
+      return {'success': false, 'error': payload['error'] ?? 'Unable to create account'};
+    }
+
+    final payload = jsonDecode(response.body);
+    if (payload['success'] != true) {
+      return {'success': false, 'error': payload['error'] ?? 'Unable to create account'};
+    }
+
+    await _persistAuthSession(payload['user'] as Map<String, dynamic>?, payload['token'] as String?);
+    return {'success': true};
+  }
+
+  Future<Map<String, dynamic>> emailLogin({required String email, required String password}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+
+    if (response.statusCode != 200) {
+      final payload = jsonDecode(response.body);
+      return {'success': false, 'error': payload['error'] ?? 'Invalid email or password'};
+    }
+
+    final payload = jsonDecode(response.body);
+    if (payload['success'] != true) {
+      return {'success': false, 'error': payload['error'] ?? 'Invalid email or password'};
+    }
+
+    await _persistAuthSession(payload['user'] as Map<String, dynamic>?, payload['token'] as String?);
+    return {'success': true};
+  }
+
   Future<bool> googleLogin({required String idToken}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/google-login');
     final response = await http.post(
@@ -62,18 +122,7 @@ class AppState extends ChangeNotifier {
       return false;
     }
 
-    _user = payload['user'] as Map<String, dynamic>?;
-    _authToken = payload['token'] as String?;
-    if (_user == null || _authToken == null) {
-      return false;
-    }
-
-    _isAuthenticated = true;
-    _diamondBalance = (_user!['diamondBalance'] ?? 0) as int;
-    _isAdmin = (_user!['role'] ?? 'USER') == 'ADMIN';
-    await _secureStorage.write(key: 'authToken', value: _authToken!);
-    await _prefs.setString('user', jsonEncode(_user));
-    notifyListeners();
+    await _persistAuthSession(payload['user'] as Map<String, dynamic>?, payload['token'] as String?);
     return true;
   }
 
