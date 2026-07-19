@@ -12,7 +12,20 @@
           "package_name": "com.tubepilot.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "785380271822-4hf4nc61kbto01nmqagpsd4mjukfpuud.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tubepilot.app",
+            "certificate_hash": "2dfd626c1b5163b92097ca3b2800c8175c6df18e"
+          }
+        },
+        {
+          "client_id": "785380271822-6cqntbeua94ve67vfrbdmt6kikmulrao.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAvQTD6pSvOHcXQZD-qgm5aNgKq_Q5MMRU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "785380271822-4b45kncm1b6rhpcj19ooosms7gmlvnes.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
