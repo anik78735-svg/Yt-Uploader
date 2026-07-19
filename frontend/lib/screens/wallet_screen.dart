@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:yt_uploader_frontend/config/api_config.dart';
 import 'package:yt_uploader_frontend/state/app_state.dart';
@@ -18,6 +19,9 @@ class _WalletScreenState extends State<WalletScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   Map<String, dynamic>? _walletData;
+  List<dynamic> _history = [];
+  List<dynamic> _purchases = [];
+  List<dynamic> _usage = [];
   bool _loading = true;
 
   @override
@@ -25,6 +29,7 @@ class _WalletScreenState extends State<WalletScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadWallet();
+    _loadHistory();
   }
 
   @override
@@ -37,8 +42,7 @@ class _WalletScreenState extends State<WalletScreen>
     final state = context.read<AppState>();
     final headers = await state.getAuthHeadersForRequest();
     try {
-      final response = await http
-          .get(Uri.parse('${ApiConfig.baseUrl}/api/wallet'), headers: headers);
+      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/wallet'), headers: headers);
       if (!mounted) return;
       final payload = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -50,6 +54,29 @@ class _WalletScreenState extends State<WalletScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    final state = context.read<AppState>();
+    final headers = await state.getAuthHeadersForRequest();
+    try {
+      final historyResponse = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/wallet/history'), headers: headers);
+      final purchasesResponse = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/wallet/purchases'), headers: headers);
+      final usageResponse = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/wallet/usage'), headers: headers);
+      if (!mounted) return;
+      setState(() {
+        _history = historyResponse.statusCode == 200 ? (jsonDecode(historyResponse.body)['history'] as List<dynamic>? ?? []) : [];
+        _purchases = purchasesResponse.statusCode == 200 ? (jsonDecode(purchasesResponse.body)['purchases'] as List<dynamic>? ?? []) : [];
+        _usage = usageResponse.statusCode == 200 ? (jsonDecode(usageResponse.body)['usage'] as List<dynamic>? ?? []) : [];
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _history = [];
+        _purchases = [];
+        _usage = [];
+      });
     }
   }
 
@@ -171,52 +198,39 @@ class _WalletScreenState extends State<WalletScreen>
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return _TransactionItem(
-            type: index % 2 == 0 ? 'Purchase' : 'Usage',
-            amount: index % 2 == 0 ? '+500' : '-100',
-            date: 'May ${20 - index}, 2025',
-            description:
-                index % 2 == 0 ? 'Diamond Package Purchase' : 'Video Upload',
-          );
-        },
-      ),
-    );
+    return _buildHistoryList(_history, emptyText: 'No transactions yet');
   }
 
   Widget _buildPurchaseHistory() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: ListView.builder(
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          return _TransactionItem(
-            type: 'Purchase',
-            amount: '+${(index + 1) * 100}',
-            date: 'May ${20 - (index * 3)}, 2025',
-            description: 'Starter Pack',
-          );
-        },
-      ),
-    );
+    return _buildHistoryList(_purchases, emptyText: 'No purchases yet');
   }
 
   Widget _buildUsageHistory() {
+    return _buildHistoryList(_usage, emptyText: 'No usage yet');
+  }
+
+  Widget _buildHistoryList(List<dynamic> items, {required String emptyText}) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(child: Text(emptyText, style: AppTextStyles.bodySmall)),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: ListView.builder(
-        itemCount: 4,
+        itemCount: items.length,
         itemBuilder: (context, index) {
+          final item = items[index] as Map<String, dynamic>;
+          final type = (item['transactionType'] ?? '').toString();
+          final amount = (item['diamondAmount'] ?? 0).toInt();
+          final isIncome = type == 'CREDIT' || type == 'PURCHASE';
+          final date = DateTime.tryParse(item['createdAt']?.toString() ?? '') ?? DateTime.now();
           return _TransactionItem(
-            type: 'Usage',
-            amount: '-10',
-            date: 'May ${18 - index}, 2025',
-            description: 'Video Upload',
+            type: type,
+            amount: isIncome ? '+$amount' : '-$amount',
+            date: DateFormat('MMM d, yyyy').format(date),
+            description: item['description']?.toString() ?? 'Transaction',
           );
         },
       ),

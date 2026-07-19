@@ -1,10 +1,12 @@
 const { google } = require('googleapis');
 const { encryptToken, decryptToken } = require('../utils/crypto');
 
+const YOUTUBE_REDIRECT_URI = process.env.YOUTUBE_REDIRECT_URI || 'https://yt-uploader-3ulo.onrender.com/api/auth/youtube-callback';
+
 const youtubeOAuthClient = new google.auth.OAuth2(
   process.env.YOUTUBE_CLIENT_ID,
   process.env.YOUTUBE_CLIENT_SECRET,
-  'https://developers.google.com/oauthplayground'
+  YOUTUBE_REDIRECT_URI
 );
 
 function getYoutubeClientForUser(user) {
@@ -15,7 +17,7 @@ function getYoutubeClientForUser(user) {
   const client = new google.auth.OAuth2(
     process.env.YOUTUBE_CLIENT_ID,
     process.env.YOUTUBE_CLIENT_SECRET,
-    'https://developers.google.com/oauthplayground'
+    YOUTUBE_REDIRECT_URI
   );
 
   client.setCredentials({

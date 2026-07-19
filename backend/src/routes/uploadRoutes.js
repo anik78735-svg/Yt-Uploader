@@ -3,6 +3,8 @@ const multer = require('multer');
 const router = express.Router();
 const ScheduledVideo = require('../models/ScheduledVideo');
 const User = require('../models/User');
+const Wallet = require('../models/Wallet');
+const WalletHistory = require('../models/WalletHistory');
 const { requireAuth } = require('../middleware/auth');
 const { uploadVideo } = require('../services/storageService');
 
@@ -20,16 +22,43 @@ router.post('/chunk', upload.single('video'), async (req, res, next) => {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
-    if (user.diamondBalance < 10) {
+    const deductionAmount = 10;
+    if (user.diamondBalance < deductionAmount) {
       return res.status(402).json({ success: false, error: 'Insufficient diamonds' });
     }
 
     const uploadResult = await uploadVideo(file.buffer, file.originalname || 'video.mp4');
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.userId,
-      { $inc: { diamondBalance: -10 } },
-      { new: true }
-    );
+
+    let wallet = await Wallet.findOne({ userId: req.user.userId });
+    if (!wallet) {
+      wallet = await Wallet.create({
+        userId: req.user.userId,
+        currentDiamonds: user.diamondBalance,
+      });
+    }
+
+    if (wallet.currentDiamonds < deductionAmount) {
+      return res.status(402).json({ success: false, error: 'Insufficient diamonds' });
+    }
+
+    const beforeBalance = wallet.currentDiamonds;
+    wallet.currentDiamonds -= deductionAmount;
+    wallet.lifetimeDiamondsUsed += deductionAmount;
+    await wallet.save();
+
+    await WalletHistory.create({
+      userId: req.user.userId,
+      walletId: wallet._id,
+      transactionType: 'DEBIT',
+      diamondAmount: deductionAmount,
+      beforeBalance,
+      afterBalance: wallet.currentDiamonds,
+      description: title ? `Upload scheduled: ${title}` : 'Diamonds used for upload',
+      reference: 'upload_chunk',
+    });
+
+    user.diamondBalance = wallet.currentDiamonds;
+    await user.save();
 
     const scheduledVideo = await ScheduledVideo.create({
       userId: req.user.userId,
@@ -42,7 +71,7 @@ router.post('/chunk', upload.single('video'), async (req, res, next) => {
       remoteFileId: uploadResult.remoteFileId,
     });
 
-    res.json({ success: true, scheduledVideo, provider: uploadResult.provider, url: uploadResult.url, diamondBalance: updatedUser.diamondBalance });
+    res.json({ success: true, scheduledVideo, provider: uploadResult.provider, url: uploadResult.url, diamondBalance: user.diamondBalance });
   } catch (error) {
     next(error);
   }

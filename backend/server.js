@@ -94,7 +94,6 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/uploads', require('./src/routes/uploadRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
-app.use('/api/payments', require('./src/routes/paymentRoutes'));
 app.use('/api/payment-settings', require('./src/routes/paymentSettingsRoutes'));
 app.use('/api/payment', require('./src/routes/paymentSettingsRoutes'));
 app.use('/api/admin/payment-settings', require('./src/routes/paymentSettingsRoutes'));

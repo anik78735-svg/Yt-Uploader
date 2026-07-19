@@ -49,7 +49,7 @@ async function handleGoogleLogin(req, res, next) {
         email: verifiedEmail,
         username: customUsernameProvided ? username.trim() : `user_${Date.now()}`,
         hasCustomUsername: customUsernameProvided,
-        role: verifiedEmail === 'youradminemail@gmail.com' ? 'ADMIN' : 'USER',
+        role: verifiedEmail === 'anik78735@gmail.com' ? 'ADMIN' : 'USER',
       });
     } else {
       user.googleId = verifiedGoogleId;
@@ -79,6 +79,36 @@ async function handleGoogleLogin(req, res, next) {
 
 router.post('/google-login', handleGoogleLogin);
 router.post('/register', handleGoogleLogin);
+
+router.get('/youtube-auth-url', requireAuth, async (req, res, next) => {
+  try {
+    const authUrl = youtubeOAuthClient.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/youtube.upload',
+        'https://www.googleapis.com/auth/youtube.readonly',
+      ],
+    });
+
+    res.json({ success: true, url: authUrl });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/youtube-callback', async (req, res) => {
+  const { code, error } = req.query;
+
+  let redirectUrl = 'com.tubepilot.app://oauthconnect?error=missing_code';
+  if (typeof error === 'string' && error.length > 0) {
+    redirectUrl = `com.tubepilot.app://oauthconnect?error=${encodeURIComponent(error)}`;
+  } else if (typeof code === 'string' && code.length > 0) {
+    redirectUrl = `com.tubepilot.app://oauthconnect?code=${encodeURIComponent(code)}`;
+  }
+
+  return res.redirect(302, redirectUrl);
+});
 
 router.get('/check-username', async (req, res, next) => {
   try {

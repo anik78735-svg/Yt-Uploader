@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 import 'package:yt_uploader_frontend/config/api_config.dart';
 import 'package:yt_uploader_frontend/theme/app_theme.dart';
 import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
@@ -173,11 +175,25 @@ class _PaymentPageScreenState extends State<PaymentPageScreen> {
                           children: [
                             Expanded(
                                 child: GradientButton(
-                                    text: 'Copy UPI', onPressed: () {})),
+                                    text: 'Copy UPI',
+                                    onPressed: () async {
+                                      await Clipboard.setData(
+                                        ClipboardData(text: settings?['upiId'] ?? ''),
+                                      );
+                                      if (!mounted) return;
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('UPI ID copied to clipboard')),
+                                      );
+                                    })),
                             const SizedBox(width: AppSpacing.lg),
                             Expanded(
                                 child: GradientButton(
-                                    text: 'Share Link', onPressed: () {})),
+                                    text: 'Share Link',
+                                    onPressed: () {
+                                      final message = 'Payment request for ${payment?['diamonds'] ?? 0} diamonds. UPI ID: ${settings?['upiId'] ?? ''}. Amount: ₹${payment?['amount'] ?? 0}. Payment ID: ${payment?['paymentId'] ?? ''}';
+                                      Share.share(message);
+                                    })),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.lg),

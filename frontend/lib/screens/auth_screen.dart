@@ -14,7 +14,10 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+  scopes: ['email'],
+  serverClientId: '786154227390-53bnnlk9940qopm73teh8k2j46rgglrt.apps.googleusercontent.com',
+);
   bool _isLoading = false;
 
   @override

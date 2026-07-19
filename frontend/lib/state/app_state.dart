@@ -15,15 +15,11 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? _user;
   int _diamondBalance = 0;
   bool _isAdmin = false;
-  List<dynamic> _pendingTransactions = [];
-  List<dynamic> _users = [];
 
   bool get isAuthenticated => _isAuthenticated;
   Map<String, dynamic>? get user => _user;
   int get diamondBalance => _diamondBalance;
   bool get isAdmin => _isAdmin;
-  List<dynamic> get pendingTransactions => _pendingTransactions;
-  List<dynamic> get users => _users;
 
   Future<Map<String, String>> _authHeaders() async {
     final token = _authToken ?? await _secureStorage.read(key: 'authToken');
@@ -118,68 +114,81 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  Future<void> createPaymentLog(
-      {required String username, required int amount}) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/create');
+  Future<String?> getYoutubeAuthUrl() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/youtube-auth-url');
+    final response = await http.get(uri, headers: await _authHeaders());
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    final payload = jsonDecode(response.body);
+    return payload['url'] as String?;
+  }
+
+  Future<bool> connectYoutubeChannel({required String code}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/youtube-connect');
     final response = await http.post(
       uri,
       headers: await _authHeaders(),
-      body: jsonEncode({
-        'userId': _user!['_id'],
-        'username': username,
-        'amount': amount,
-      }),
+      body: jsonEncode({'code': code}),
     );
-    if (response.statusCode == 200) {
-      jsonDecode(response.body);
-    }
-  }
 
-  Future<void> loadAdminData() async {
-    if (!_isAdmin) return;
-    final usersResponse = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/admin/users'),
-        headers: await _authHeaders());
-    if (usersResponse.statusCode == 200) {
-      final usersPayload = jsonDecode(usersResponse.body);
-      _users = usersPayload['users'];
+    if (response.statusCode != 200) {
+      return false;
     }
 
-    final pendingResponse = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/admin/transactions/pending'),
-        headers: await _authHeaders());
-    if (pendingResponse.statusCode == 200) {
-      final pendingPayload = jsonDecode(pendingResponse.body);
-      _pendingTransactions = pendingPayload['transactions'];
+    final payload = jsonDecode(response.body);
+    if (payload['success'] != true) {
+      return false;
     }
+
+    _user = payload['user'] as Map<String, dynamic>?;
+    if (_user == null) {
+      return false;
+    }
+
+    await _prefs.setString('user', jsonEncode(_user));
     notifyListeners();
+    return true;
   }
 
-  Future<void> approveTransaction(String transactionId) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/approve');
-    final response = await http.post(uri,
-        headers: await _authHeaders(),
-        body: jsonEncode({'transactionId': transactionId}));
-    if (response.statusCode == 200) {
-      await loadAdminData();
+  Future<List<dynamic>> fetchSchedules() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/schedules');
+    final response = await http.get(uri, headers: await _authHeaders());
+    if (response.statusCode != 200) {
+      return [];
     }
-  }
 
-  Future<void> rejectTransaction(String transactionId) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/payments/reject');
-    final response = await http.post(uri,
-        headers: await _authHeaders(),
-        body: jsonEncode({'transactionId': transactionId}));
-    if (response.statusCode == 200) {
-      await loadAdminData();
+    final payload = jsonDecode(response.body);
+    if (payload['success'] != true) {
+      return [];
     }
+
+    return payload['schedules'] as List<dynamic>? ?? [];
   }
 
-  Future<void> forceLogout(String userId) async {
+  Future<List<dynamic>> fetchUsers({String? search}) async {
+    final query = search != null && search.trim().isNotEmpty
+        ? '?search=${Uri.encodeComponent(search.trim())}'
+        : '';
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/admin/users$query');
+    final response = await http.get(uri, headers: await _authHeaders());
+    if (response.statusCode != 200) {
+      return [];
+    }
+
+    final payload = jsonDecode(response.body);
+    return payload['users'] as List<dynamic>? ?? [];
+  }
+
+  Future<bool> forceLogoutUser(String userId) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/admin/users/logout');
-    await http.post(uri,
-        headers: await _authHeaders(), body: jsonEncode({'userId': userId}));
-    await loadAdminData();
+    final response = await http.post(
+      uri,
+      headers: await _authHeaders(),
+      body: jsonEncode({'userId': userId}),
+    );
+    return response.statusCode == 200;
   }
 
   Future<Map<String, String>> getAuthHeadersForRequest() async {

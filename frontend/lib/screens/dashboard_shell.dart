@@ -5,10 +5,8 @@ import 'package:yt_uploader_frontend/theme/app_theme.dart';
 import 'package:yt_uploader_frontend/widgets/bottom_navigation.dart';
 import 'package:yt_uploader_frontend/screens/home_screen.dart';
 import 'package:yt_uploader_frontend/screens/upload_screen.dart';
-import 'package:yt_uploader_frontend/screens/schedule_screen.dart';
 import 'package:yt_uploader_frontend/screens/analytics_screen.dart';
 import 'package:yt_uploader_frontend/screens/profile_screen.dart';
-import 'package:yt_uploader_frontend/screens/admin_payment_screen.dart';
 
 class DashboardShell extends StatefulWidget {
   const DashboardShell({super.key});
@@ -22,8 +20,7 @@ class _DashboardShellState extends State<DashboardShell> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final isAdmin = state.isAdmin;
+    context.watch<AppState>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,11 +28,6 @@ class _DashboardShellState extends State<DashboardShell> {
       bottomNavigationBar: CustomBottomNavigation(
         currentItem: _currentItem,
         onItemSelected: (item) {
-          if (item == NavigationItem.profile && isAdmin) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AdminPaymentScreen()));
-            return;
-          }
           setState(() {
             _currentItem = item;
           });
@@ -51,7 +43,7 @@ class _DashboardShellState extends State<DashboardShell> {
       case NavigationItem.upload:
         return const UploadScreen();
       case NavigationItem.schedule:
-        return const ScheduleScreen();
+        return const UploadScreen();
       case NavigationItem.analytics:
         return const AnalyticsScreen();
       case NavigationItem.profile:

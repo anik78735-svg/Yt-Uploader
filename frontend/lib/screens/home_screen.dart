@@ -6,7 +6,7 @@ import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
 import 'package:yt_uploader_frontend/screens/diamond_store_screen.dart';
 import 'package:yt_uploader_frontend/screens/wallet_screen.dart';
 import 'package:yt_uploader_frontend/screens/upload_screen.dart';
-import 'package:yt_uploader_frontend/screens/schedule_screen.dart';
+import 'package:yt_uploader_frontend/screens/upcoming_videos_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -131,7 +131,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const Text('Upcoming Videos', style: AppTextStyles.heading3),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UpcomingVideosScreen()),
+                );
+              },
               child: const Text('View All'),
             ),
           ],
@@ -203,9 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 text: 'Schedule',
                 onPressed: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ScheduleScreen()));
+                    context,
+                    MaterialPageRoute(builder: (_) => const UploadScreen()),
+                  );
                 },
               ),
             ),
