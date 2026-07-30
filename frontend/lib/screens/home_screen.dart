@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:yt_uploader_frontend/state/app_state.dart';
-import 'package:yt_uploader_frontend/theme/app_theme.dart';
-import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
-import 'package:yt_uploader_frontend/screens/diamond_store_screen.dart';
-import 'package:yt_uploader_frontend/screens/wallet_screen.dart';
-import 'package:yt_uploader_frontend/screens/upload_screen.dart';
-import 'package:yt_uploader_frontend/screens/upcoming_videos_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../data/categories.dart';
+import 'prompt_detail_screen.dart';
+import 'video_preview_screen.dart';
+import '../utils/video_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,337 +14,300 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _loadDashboardData();
-  }
+  String _contentType = "image"; // image | ads | video
+  String _selectedCategory = "All";
+  String _searchQuery = "";
 
-  Future<void> _loadDashboardData() async {
-    // Load user data and dashboard info
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: AppSpacing.xxl),
-              _buildDiamondCard(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildStatsGrid(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildUpcomingVideos(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildQuickActions(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildRecentActivity(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Welcome Back!', style: AppTextStyles.heading2),
-        const SizedBox(height: AppSpacing.sm),
-        Consumer<AppState>(
-          builder: (context, state, _) {
-            return Text(
-              state.user?['youtubeChannelName'] ?? 'Channel',
-              style:
-                  AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+  void _openCategoryPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        final cats = promptCategories;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Select Category", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 2.6,
+                      ),
+                      itemCount: cats.length,
+                      itemBuilder: (context, index) {
+                        final cat = cats[index];
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            setState(() {
+                              _contentType = "image";
+                              _selectedCategory = cat;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: cat == _selectedCategory ? Colors.green : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              cat,
+                              style: TextStyle(
+                                color: cat == _selectedCategory ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDiamondCard() {
-    return Consumer<AppState>(
-      builder: (context, state, _) {
-        return DiamondBalance(
-          diamonds: state.diamondBalance,
-          onBuyMore: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const DiamondStoreScreen()));
           },
         );
       },
     );
   }
 
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppSpacing.lg,
-      mainAxisSpacing: AppSpacing.lg,
-      children: [
-        _StatCard(
-          icon: Icons.cloud_upload_rounded,
-          label: "Today's Uploads",
-          value: '0',
-          color: AppColors.primary,
-        ),
-        _StatCard(
-          icon: Icons.schedule_rounded,
-          label: 'Scheduled',
-          value: '3',
-          color: AppColors.secondary,
-        ),
-        _StatCard(
-          icon: Icons.check_circle_rounded,
-          label: 'Completed',
-          value: '12',
-          color: AppColors.success,
-        ),
-        _StatCard(
-          icon: Icons.trending_up_rounded,
-          label: 'Views (30d)',
-          value: '2.5K',
-          color: AppColors.warning,
-        ),
-      ],
+  Widget _typeChip(String label, IconData icon, VoidCallback onTap, bool selected) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 16, color: selected ? Colors.white : null), const SizedBox(width: 4), Text(label)]),
+        selected: selected,
+        selectedColor: Colors.green,
+        labelStyle: TextStyle(color: selected ? Colors.white : null, fontWeight: FontWeight.w600),
+        onSelected: (_) => onTap(),
+      ),
     );
   }
 
-  Widget _buildUpcomingVideos() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("🔥 10,000+ Viral Image", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
           children: [
-            const Text('Upcoming Videos', style: AppTextStyles.heading3),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UpcomingVideosScreen()),
-                );
-              },
-              child: const Text('View All'),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        GlassCard(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '10 AI Tools That Will Blow Your Mind',
-                style: AppTextStyles.bodyLarge,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            TextField(
+              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: "Search prompts..",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
+            ),
+            const SizedBox(height: 10),
+
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Text(
-                      'Scheduled',
-                      style: TextStyle(color: AppColors.primary, fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  const Text(
-                    'Tomorrow at 10:00 PM',
-                    style: AppTextStyles.bodySmall,
-                  ),
+                  _typeChip("All", Icons.grid_view, () {
+                    setState(() { _contentType = "image"; _selectedCategory = "All"; });
+                    _openCategoryPicker();
+                  }, _contentType == "image"),
+                  _typeChip("Ads", Icons.campaign_outlined, () => setState(() => _contentType = "ads"), _contentType == "ads"),
+                  _typeChip("Video", Icons.videocam_outlined, () => setState(() => _contentType = "video"), _contentType == "video"),
+                  ...promptCategories.where((c) => c != "All").map((cat) => _typeChip(
+                        cat,
+                        Icons.label_outline,
+                        () => setState(() { _contentType = "image"; _selectedCategory = cat; }),
+                        _contentType == "image" && _selectedCategory == cat,
+                      )),
                 ],
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Quick Actions', style: AppTextStyles.heading3),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: GradientButton(
-                text: 'Upload Video',
-                onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const UploadScreen()));
-                },
-              ),
             ),
-            const SizedBox(width: AppSpacing.lg),
+            const SizedBox(height: 10),
+
             Expanded(
-              child: GradientButton(
-                text: 'Schedule',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const UploadScreen()),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: currentUser != null
+                    ? FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots()
+                    : const Stream.empty(),
+                builder: (context, userSnap) {
+                  bool isPremiumUser = false;
+                  if (userSnap.hasData && userSnap.data!.exists) {
+                    final data = userSnap.data!.data() as Map<String, dynamic>;
+                    final Timestamp? until = data['premiumUntil'];
+                    if (until != null && until.toDate().isAfter(DateTime.now())) isPremiumUser = true;
+                  }
+
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance.collection('prompts').orderBy('createdAt', descending: true).snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: Colors.green));
+                      }
+                      if (!snapshot.hasData) return const SizedBox();
+
+                      final docs = snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final String type = data['type'] ?? 'image';
+                        if (type != _contentType) return false;
+
+                        if (_contentType != "ads" && _selectedCategory != "All") {
+                          if ((data['category'] ?? '') != _selectedCategory) return false;
+                        }
+
+                        if (_searchQuery.isNotEmpty) {
+                          return (data['prompt'] ?? '').toString().toLowerCase().contains(_searchQuery);
+                        }
+                        return true;
+                      }).toList();
+
+                      if (docs.isEmpty) {
+                        return Center(child: Text("No ${_contentType == 'image' ? 'prompts' : _contentType} available.", style: const TextStyle(color: Colors.grey)));
+                      }
+
+                      return GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.75,
+                        ),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          var data = docs[index].data() as Map<String, dynamic>;
+                          String imageUrl = data['imageUrl'] ?? '';
+                          String videoUrl = data['videoUrl'] ?? '';
+                          String promptText = data['prompt'] ?? '';
+                          String category = data['category'] ?? 'General';
+                          bool isPremiumPrompt = data['isPremium'] == true;
+                          bool locked = isPremiumPrompt && !isPremiumUser;
+
+                          if (_contentType == "video") {
+                            final thumbUrl = getVideoThumbnail(videoUrl);
+                            return GestureDetector(
+                              onTap: () {
+                                if (locked) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("🔒 Claim a gift code to unlock premium videos")),
+                                  );
+                                  return;
+                                }
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (context) => VideoPreviewScreen(
+                                    videoUrl: videoUrl,
+                                    caption: promptText,
+                                    category: category,
+                                  ),
+                                ));
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    locked
+                                        ? ColorFiltered(
+                                            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.55), BlendMode.darken),
+                                            child: Image.network(
+                                              thumbUrl,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                decoration: const BoxDecoration(
+                                                  gradient: LinearGradient(colors: [Color(0xFF0EA472), Color(0xFF065F46)]),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Image.network(
+                                            thumbUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              decoration: const BoxDecoration(
+                                                gradient: LinearGradient(colors: [Color(0xFF0EA472), Color(0xFF065F46)]),
+                                              ),
+                                            ),
+                                          ),
+                                    if (!locked) Container(color: Colors.black.withOpacity(0.15)),
+                                    Center(
+                                      child: Icon(
+                                        locked ? Icons.lock : Icons.play_circle_fill,
+                                        color: Colors.white,
+                                        size: locked ? 32 : 48,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          return GestureDetector(
+                            onTap: () {
+                              if (locked) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("🔒 Claim a gift code to unlock premium prompts")),
+                                );
+                                return;
+                              }
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context) => PromptDetailScreen(imageUrl: imageUrl, promptText: promptText, category: category),
+                              ));
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  locked
+                                      ? ColorFiltered(
+                                          colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.55), BlendMode.darken),
+                                          child: Image.network(imageUrl, fit: BoxFit.cover),
+                                        )
+                                      : Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            color: Colors.grey[300],
+                                            child: const Center(child: Icon(Icons.broken_image, size: 40)),
+                                          ),
+                                        ),
+                                  if (locked) const Center(child: Icon(Icons.lock, color: Colors.white, size: 32)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   );
                 },
               ),
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: GradientButton(
-                text: 'Buy Diamonds',
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const DiamondStoreScreen()));
-                },
-                gradientStart: AppColors.diamond,
-                gradientEnd: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Container(
-                height: 54,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.glassBorder),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const WalletScreen()));
-                    },
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    child: const Center(
-                      child: Text('Wallet', style: AppTextStyles.button),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentActivity() {
-    return GlassCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Recent Activity', style: AppTextStyles.heading3),
-          const SizedBox(height: AppSpacing.lg),
-          _ActivityItem(
-              title: 'Diamond purchase approved',
-              subtitle: 'Your latest refill has been credited',
-              icon: Icons.workspace_premium_rounded),
-          const SizedBox(height: AppSpacing.md),
-          _ActivityItem(
-              title: 'Upload scheduled successfully',
-              subtitle: 'Your video is queued for tomorrow',
-              icon: Icons.schedule_rounded),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _ActivityItem(
-      {required this.title, required this.subtitle, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: Icon(icon, color: AppColors.primary),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTextStyles.bodyLarge),
-              const SizedBox(height: AppSpacing.sm),
-              Text(subtitle, style: AppTextStyles.bodySmall),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Icon(icon, color: color, size: 32),
-          Text(label,
-              style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
-          Text(value, style: AppTextStyles.heading2),
-        ],
       ),
     );
   }

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
-import 'package:yt_uploader_frontend/screens/dashboard_shell.dart';
-import 'package:yt_uploader_frontend/screens/signup_screen.dart';
-import 'package:yt_uploader_frontend/state/app_state.dart';
-import 'package:yt_uploader_frontend/theme/app_theme.dart';
-import 'package:yt_uploader_frontend/widgets/common_widgets.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
+import 'main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,165 +12,99 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-    serverClientId: '786154227390-53bnnlk9940qopm73teh8k2j46rgglrt.apps.googleusercontent.com',
-  );
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
-  String? _formError;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _googleSignIn.disconnect();
-    super.dispose();
+  void _goToApp(User user) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MainNavigationScreen(user: user)),
+    );
+  }
+
+  void _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    User? user = await _authService.signInWithGoogle();
+    setState(() => _isLoading = false);
+
+    if (user != null && mounted) {
+      _goToApp(user);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sign-In Failed. Please try again.")),
+      );
+    }
+  }
+
+  void _handleSkip() async {
+    setState(() => _isLoading = true);
+    User? user = await _authService.signInAsGuest();
+    setState(() => _isLoading = false);
+
+    if (user != null && mounted) {
+      _goToApp(user);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Could not continue as guest.")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    context.watch<AppState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.white38 : Colors.black26;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: LoadingOverlay(
-        isLoading: _isLoading,
-        message: 'Signing you in...',
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: GlassCard(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Text('Welcome back', style: AppTextStyles.heading2),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'Log in with your email and password, or continue with Google.',
-                      style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    if (_formError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: Text(
-                          _formError!,
-                          style: AppTextStyles.body.copyWith(color: AppColors.error),
-                        ),
-                      ),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    GradientButton(
-                      text: 'Log In',
-                      onPressed: _submitLogin,
-                      isLoading: _isLoading,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    const Row(children: [Expanded(child: Divider()), SizedBox(width: AppSpacing.md), Text('or'), SizedBox(width: AppSpacing.md), Expanded(child: Divider())]),
-                    const SizedBox(height: AppSpacing.lg),
-                    GradientButton(
-                      text: 'Continue with Google',
-                      onPressed: _handleGoogleLogin,
-                      gradientStart: AppColors.secondary,
-                      gradientEnd: AppColors.primary,
-                      isLoading: _isLoading,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Center(
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SignupScreen()));
-                        },
-                        child: const Text('Don\'t have an account? Sign up'),
-                      ),
-                    ),
-                  ],
-                ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset("assets/splash.png", width: 90, height: 90, fit: BoxFit.contain),
+              const SizedBox(height: 24),
+              Text(
+                "Login to Continue",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor),
               ),
-            ),
+              const SizedBox(height: 30),
+              _isLoading
+                  ? CircularProgressIndicator(color: AppColors.primary)
+                  : Column(
+                      children: [
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.login, color: Colors.redAccent),
+                          label: Text(
+                            "Continue with Google",
+                            style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          onPressed: _handleGoogleSignIn,
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _handleSkip,
+                          child: Text(
+                            "Skip for now",
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _submitLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _formError = 'Please enter both email and password');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _formError = null;
-    });
-
-    try {
-      final appState = context.read<AppState>();
-      final result = await appState.emailLogin(email: email, password: password);
-      if (result['success'] != true) {
-        setState(() => _formError = result['error']?.toString() ?? 'Invalid email or password');
-        return;
-      }
-      if (mounted) {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardShell()));
-      }
-    } catch (_) {
-      setState(() => _formError = 'Unable to log in. Please try again.');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _handleGoogleLogin() async {
-    setState(() => _isLoading = true);
-    final appState = context.read<AppState>();
-    try {
-      final account = await _googleSignIn.signIn();
-      if (account == null) {
-        return;
-      }
-      final auth = await account.authentication;
-      final idToken = auth.idToken;
-      if (idToken == null) {
-        throw Exception('Google ID token not available');
-      }
-      final success = await appState.googleLogin(idToken: idToken);
-      if (!success) {
-        throw Exception('Unable to sign in with Google');
-      }
-      if (mounted) {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardShell()));
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: ${error.toString()}')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 }

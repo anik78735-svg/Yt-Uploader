@@ -1,0 +1,5 @@
+package com.anik.promptverse
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

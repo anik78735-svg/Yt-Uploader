@@ -1,67 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yt_uploader_frontend/state/app_state.dart';
-import 'package:yt_uploader_frontend/screens/login_screen.dart';
-import 'package:yt_uploader_frontend/screens/signup_screen.dart';
-import 'package:yt_uploader_frontend/screens/dashboard_shell.dart';
-import 'package:yt_uploader_frontend/screens/onboarding_screen.dart';
-import 'package:yt_uploader_frontend/screens/splash_screen.dart';
-import 'package:yt_uploader_frontend/screens/username_setup_screen.dart';
-import 'package:yt_uploader_frontend/theme/app_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'screens/welcome_screen.dart';
+import 'screens/main_navigation.dart';
+import 'services/theme_controller.dart';
+import 'services/notification_service.dart';
+import 'theme/app_colors.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  runApp(ChangeNotifierProvider(
-    create: (_) => AppState(prefs),
-    child: const YtUploaderApp(),
-  ));
-}
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-class YtUploaderApp extends StatelessWidget {
-  const YtUploaderApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Yt Uploader',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const AppShell(),
-    );
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase Initialization Error: $e");
   }
+
+  await ThemeController.loadTheme();
+  await NotificationService.init();
+  FlutterNativeSplash.remove();
+
+  runApp(const MyApp());
 }
 
-class AppShell extends StatelessWidget {
-  const AppShell({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: Future.wait([
-        context.read<AppState>().bootstrap(),
-        SharedPreferences.getInstance(),
-      ]),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen();
-        }
-
-        final prefs = (snapshot.data as List<dynamic>? ?? [null, null])[1] as SharedPreferences?;
-        final hasSeenOnboarding = prefs?.getBool('hasSeenOnboarding') ?? false;
-        if (!hasSeenOnboarding) {
-          return const OnboardingScreen();
-        }
-
-        final state = context.watch<AppState>();
-        if (!state.isAuthenticated) {
-          final hasEverLoggedIn = prefs?.getBool('hasEverLoggedIn') ?? false;
-          return hasEverLoggedIn ? const LoginScreen() : const SignupScreen();
-        }
-
-        final hasCustomUsername = state.user?['hasCustomUsername'] == true;
-        return hasCustomUsername ? const DashboardShell() : const UsernameSetupScreen();
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.themeMode,
+      builder: (context, currentMode, _) {
+        return MaterialApp(
+          title: 'PromptVerse',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              brightness: Brightness.light,
+              primary: AppColors.primary,
+            ),
+            scaffoldBackgroundColor: const Color(0xFFF6F8F7),
+            cardColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              foregroundColor: Color(0xFF1B1B1B),
+            ),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              brightness: Brightness.dark,
+              primary: AppColors.primaryLight,
+            ),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            cardColor: const Color(0xFF1E1E1E),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              foregroundColor: Colors.white,
+            ),
+          ),
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                );
+              }
+              if (snapshot.hasData && snapshot.data != null) {
+                return MainNavigationScreen(user: snapshot.data!);
+              }
+              return const WelcomeScreen();
+            },
+          ),
+        );
       },
     );
   }
